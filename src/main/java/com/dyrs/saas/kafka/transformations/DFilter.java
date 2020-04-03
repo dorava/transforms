@@ -23,12 +23,13 @@ public class DFilter<R extends ConnectRecord<R>> extends Filter<R> {
 
     @Override
     public R apply(R record) {
+        LOG.info("判断是否符合条件：", record.topic());
         return super.apply(record);
     }
 
     @Override
     public void configure(Map<String, ?> props) {
         super.configure(props);
-        LOG.info(props.toString());
+        LOG.info("当前配置信息：", CONFIG_DEF.toHtml());
     }
 }
