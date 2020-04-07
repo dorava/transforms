@@ -1,8 +1,6 @@
 package com.dyrs.saas.kafka.transformations;
 
 import com.jayway.jsonpath.*;
-import io.confluent.connect.transforms.ExtractTopic;
-import io.confluent.connect.transforms.Filter;
 import io.confluent.connect.transforms.util.Requirements;
 import io.confluent.connect.transforms.util.SimpleConfig;
 import io.confluent.connect.transforms.util.TypeConverter;
@@ -20,8 +18,8 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 
-public abstract class DFilter<R extends ConnectRecord<R>> implements Transformation<R> {
-    private static final Logger LOG = LoggerFactory.getLogger(DFilter.class);
+public abstract class DYFilter<R extends ConnectRecord<R>> implements Transformation<R> {
+    private static final Logger LOG = LoggerFactory.getLogger(DYFilter.class);
     public static final String FILTER_CONDITION_CONFIG = "filter.condition";
     public static final String FILTER_CONDITION_DISPLAY = "Filter Condition";
     public static final String FILTER_TYPE_CONFIG = "filter.type";
@@ -39,24 +37,25 @@ public abstract class DFilter<R extends ConnectRecord<R>> implements Transformat
     };
     private SimpleConfig config;
     private JsonPath filterConditionPath;
-    private DFilter.FilterType filterTypeEnum;
-    private DFilter.MissingOrNullBehavior missingOrNullBehaviorEnum;
+    private DYFilter.FilterType filterTypeEnum;
+    private DYFilter.MissingOrNullBehavior missingOrNullBehaviorEnum;
     public static final ConfigDef CONFIG_DEF;
 
-    public DFilter() {
+    public DYFilter() {
+        System.out.println("create DYFilter");
     }
 
     public void configure(Map<String, ?> props) {
         this.config = new SimpleConfig(CONFIG_DEF, props);
         this.filterConditionPath = JsonPath.compile(this.config.getString("filter.condition"), new Predicate[0]);
-        this.filterTypeEnum = DFilter.FilterType.valueOf(this.config.getString("filter.type").toUpperCase());
-        this.missingOrNullBehaviorEnum = DFilter.MissingOrNullBehavior.valueOf(this.config.getString("missing.or.null.behavior").toUpperCase());
+        this.filterTypeEnum = DYFilter.FilterType.valueOf(this.config.getString("filter.type").toUpperCase());
+        this.missingOrNullBehaviorEnum = DYFilter.MissingOrNullBehavior.valueOf(this.config.getString("missing.or.null.behavior").toUpperCase());
 
-        LOG.info("当前配置信息：", CONFIG_DEF.toHtml());
+        LOG.info("current config:", CONFIG_DEF.toHtml());
     }
 
     public R apply(R record) {
-        LOG.info("判断是否符合条件：", record.topic());
+        LOG.info("check the condition:" + record.topic());
         return this.operatingValue(record) != null && this.shouldDrop(record) ? null : record;
     }
 
@@ -85,19 +84,19 @@ public abstract class DFilter<R extends ConnectRecord<R>> implements Transformat
                     return filtered.size() == 0;
             }
         } catch (PathNotFoundException var5) {
-            if (this.missingOrNullBehaviorEnum == DFilter.MissingOrNullBehavior.FAIL) {
-                throw new PathNotFoundException("Unable to apply the JSON Path filter condition `" + this.config.getString("filter.condition") + "` because the path could not be found in the record. Set ``" + "missing.or.null.behavior" + "`` to ``" + DFilter.MissingOrNullBehavior.INCLUDE.name().toLowerCase() + "`` or ``" + DFilter.MissingOrNullBehavior.EXCLUDE.name().toLowerCase() + "`` to change how the transform handles this condition.");
+            if (this.missingOrNullBehaviorEnum == DYFilter.MissingOrNullBehavior.FAIL) {
+                throw new PathNotFoundException("Unable to apply the JSON Path filter condition `" + this.config.getString("filter.condition") + "` because the path could not be found in the record. Set ``" + "missing.or.null.behavior" + "`` to ``" + DYFilter.MissingOrNullBehavior.INCLUDE.name().toLowerCase() + "`` or ``" + DYFilter.MissingOrNullBehavior.EXCLUDE.name().toLowerCase() + "`` to change how the transform handles this condition.");
             } else {
-                return this.missingOrNullBehaviorEnum == DFilter.MissingOrNullBehavior.EXCLUDE;
+                return this.missingOrNullBehaviorEnum == DYFilter.MissingOrNullBehavior.EXCLUDE;
             }
         }
     }
 
     static {
-        CONFIG_DEF = (new ConfigDef()).define("filter.condition", ConfigDef.Type.STRING, ConfigDef.NO_DEFAULT_VALUE, VALIDATOR_JSON_PATH, ConfigDef.Importance.HIGH, "The criteria used to match records to be included or excluded by this transformation. Use JSON Path predicate notation defined in: https://github.com/json-path/JsonPath ", (String) null, -1, ConfigDef.Width.LONG, "Filter Condition").define("filter.type", ConfigDef.Type.STRING, ConfigDef.NO_DEFAULT_VALUE, Validators.oneOf(DFilter.FilterType.class), ConfigDef.Importance.HIGH, "The action to perform with records that match the ``filter.condition`` predicate. Use ``" + DFilter.FilterType.INCLUDE.name().toLowerCase() + "`` to pass through all records that match the predicate and drop all records that do not satisfy the predicate, or use ``" + DFilter.FilterType.EXCLUDE.name().toLowerCase() + "`` to drop all records that match the predicate.", (String) null, -1, ConfigDef.Width.SHORT, "Filter Type", Recommenders.enumValues(DFilter.FilterType.class, new DFilter.FilterType[0])).define("missing.or.null.behavior", ConfigDef.Type.STRING, DFilter.MissingOrNullBehavior.FAIL.name().toLowerCase(), Validators.oneOf(DFilter.MissingOrNullBehavior.class), ConfigDef.Importance.MEDIUM, "The behavior when the record does not have the field(s) used in the ``filter.condition``. Use ``" + DFilter.MissingOrNullBehavior.FAIL.name().toLowerCase() + "`` to throw an exception and fail the connector task, ``" + DFilter.MissingOrNullBehavior.INCLUDE.name().toLowerCase() + "`` to pass the recordthrough, or ``" + DFilter.MissingOrNullBehavior.EXCLUDE.name().toLowerCase() + "``to drop the record.", (String) null, -1, ConfigDef.Width.SHORT, "Handle Missing Or Null Fields", Recommenders.enumValues(DFilter.MissingOrNullBehavior.class, new DFilter.MissingOrNullBehavior[0]));
+        CONFIG_DEF = (new ConfigDef()).define("filter.condition", ConfigDef.Type.STRING, ConfigDef.NO_DEFAULT_VALUE, VALIDATOR_JSON_PATH, ConfigDef.Importance.HIGH, "The criteria used to match records to be included or excluded by this transformation. Use JSON Path predicate notation defined in: https://github.com/json-path/JsonPath ", (String) null, -1, ConfigDef.Width.LONG, "Filter Condition").define("filter.type", ConfigDef.Type.STRING, ConfigDef.NO_DEFAULT_VALUE, Validators.oneOf(DYFilter.FilterType.class), ConfigDef.Importance.HIGH, "The action to perform with records that match the ``filter.condition`` predicate. Use ``" + DYFilter.FilterType.INCLUDE.name().toLowerCase() + "`` to pass through all records that match the predicate and drop all records that do not satisfy the predicate, or use ``" + DYFilter.FilterType.EXCLUDE.name().toLowerCase() + "`` to drop all records that match the predicate.", (String) null, -1, ConfigDef.Width.SHORT, "Filter Type", Recommenders.enumValues(DYFilter.FilterType.class, new DYFilter.FilterType[0])).define("missing.or.null.behavior", ConfigDef.Type.STRING, DYFilter.MissingOrNullBehavior.FAIL.name().toLowerCase(), Validators.oneOf(DYFilter.MissingOrNullBehavior.class), ConfigDef.Importance.MEDIUM, "The behavior when the record does not have the field(s) used in the ``filter.condition``. Use ``" + DYFilter.MissingOrNullBehavior.FAIL.name().toLowerCase() + "`` to throw an exception and fail the connector task, ``" + DYFilter.MissingOrNullBehavior.INCLUDE.name().toLowerCase() + "`` to pass the recordthrough, or ``" + DYFilter.MissingOrNullBehavior.EXCLUDE.name().toLowerCase() + "``to drop the record.", (String) null, -1, ConfigDef.Width.SHORT, "Handle Missing Or Null Fields", Recommenders.enumValues(DYFilter.MissingOrNullBehavior.class, new DYFilter.MissingOrNullBehavior[0]));
     }
 
-    public static class Value<R extends ConnectRecord<R>> extends Filter<R> {
+    public static class Value<R extends ConnectRecord<R>> extends DYFilter<R> {
         public Value() {
         }
 
@@ -110,7 +109,7 @@ public abstract class DFilter<R extends ConnectRecord<R>> implements Transformat
         }
     }
 
-    public static class Key<R extends ConnectRecord<R>> extends Filter<R> {
+    public static class Key<R extends ConnectRecord<R>> extends DYFilter<R> {
         public Key() {
         }
 
@@ -141,7 +140,7 @@ public abstract class DFilter<R extends ConnectRecord<R>> implements Transformat
     }
 }
 
-//    private static final Logger LOG = LoggerFactory.getLogger(DFilter.class);
+//    private static final Logger LOG = LoggerFactory.getLogger(DYFilter.class);
 //
 //    @Override
 //    protected Schema operatingSchema(R r) {
@@ -153,15 +152,4 @@ public abstract class DFilter<R extends ConnectRecord<R>> implements Transformat
 //        return null;
 //    }
 //
-//    @Override
-//    public R apply(R record) {
-//        LOG.info("判断是否符合条件：", record.topic());
-//        return super.apply(record);
-//    }
-//
-//    @Override
-//    public void configure(Map<String, ?> props) {
-//        super.configure(props);
-//        LOG.info("当前配置信息：", CONFIG_DEF.toHtml());
-//    }
 //}
